@@ -1,0 +1,15 @@
+[project]
+name = "python-tabla"
+version = "0.1.0"
+description = "Estructura de tabla para acceso a tablas de bases de datos"
+authors = [
+  { name="Pedro Gil Jiménez", email="pedro.gil@uah.es" }
+]
+readme = "README.md"
+requires-python = ">=3.8"
+
+dependencies = []
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
