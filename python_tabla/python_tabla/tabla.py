@@ -230,9 +230,9 @@ class Tabla(object):
         self.__vertical = Desplazamiento(
             self.__canvas, self.__marco_tabla, self.__barra)
 
+################################################################################
+################################################################################
 
-################################################################################
-################################################################################
     def refrescar(self, datos, solo_actualizar=False):
         """
         Actualizar los datos de la tabla. La función debe recibir los datos
@@ -395,7 +395,7 @@ class Tabla(object):
         # comprobar que al añadir nuevas filas, a estás también se les añade el
         # evento.
         for fila, controles in self.__controles.items():
-            controles['L'][columna].bind(
+            controles['F'][columna].bind(
                 evento, partial(funcion, fila))
 
     def añadir_evento_cabecera(self, evento, columna, funcion):
