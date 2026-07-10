@@ -415,7 +415,8 @@ class Tabla(object):
         - color: código del color de tkinter por defecto para la celda
         - funcion: función que permite calcular el color de la celda en función
           del valor de esta. Debe ser una función que devuelva un código de
-          color de tkinter
+          color de tkinter, y que toma como argumentos la fila, la columna y
+          el valor de la celda.
 
         La tabla asignará inicialmente el color devuelto por la función. Si
         el valor devuelto es None, o bien no existe la función, le asignará
