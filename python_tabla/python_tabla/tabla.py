@@ -48,18 +48,19 @@ ANCHOR = {
 class Tabla(object):
 
     def __init__(self, marco, cabecera,
-                 ancho=(100,),
+                 ancho=(10,),
                  ajuste=(0,),
                  alineacion=("C",),
-                 alto_cabecera=20,
-                 alto_datos=20,
+                 alto_cabecera=1,
+                 alto_fila=0.5,
+                 ancho_fila=2.5,
                  color_borde="black",
                  color_fondo="gray",
                  color_cabecera="blue",
                  color_filas="white",
-                 fuente_cabecera=("LIBERATION SANS", 20, ""),
+                 fuente_familia="LIBERATION SANS",
+                 fuente_tamaño=20,
                  color_fuente_cabecera="black",
-                 fuente_filas=("LIBERATION SANS", 12, ""),
                  color_fuente_filas="black"):
         """
         Construcción de la tabla, y configuración.
@@ -69,7 +70,7 @@ class Tabla(object):
           ajustará al tamaño de dicho marco.
         - cabecera: textos para la cabecera. Será una lista con tantos elementos
           como columnas deba tener la tabla.
-        - ancho: ancho mínimo en píxeles para cada una de las columnas.
+        - ancho: ancho mínimo, en caracteres, para cada una de las columnas.
         - ajuste: indica, si la tabla se hace más grande que la suma de los
           anchos mínimos, cómo se reparte el espacio sobrante:
           - 0: No se redimensiona.
@@ -77,11 +78,13 @@ class Tabla(object):
           - valores entre 0 y 1: hace que el reparto sea proporcional entre
             cada una de las columnas que tienen un valor distinto de 0.
         - alineacion: alineación del texto para cada columna (L, C, R).
-        - alto_cabecera, en pixeles
-        - alto_datos, en píxeles
+        - alto_cabecera, alto_fila, en pixeles: altura extra que se añade a la
+          altura del texto para hacer más grande las filas.
+        - ancho_fila, en píxeles: idem, para la anchura.
         - color_xxx
-        - fuente_cabecera (familia, tamaño, atributos)
-        - fuente_datos (familia, tamaño, atributos)
+        - fuente_familia, fuente_tamaño:
+          NOTA: la fuente es la misma para la cabecera y los datos, sólo que
+          para la cabecera, ésta es en negrita.
 
         NOTA: Antes de construir la tabla, se chequea que todos los parámetros
         anteriores tengan el mismo número de elementos. Si no es así, se
@@ -95,14 +98,15 @@ class Tabla(object):
         # fuera del constructor.
         # Ancho de las columnas.
         self.__ancho = ancho
-        # Altura de las filas de los datos
-        self.__alto_datos = alto_datos
-        # Y las fuentes para los textos.
-        self.__color_filas = color_filas
-        self.__fuente_filas = fuente_filas
-        self.__color_fuente_filas = color_fuente_filas
         # Guardamos la forma de alinear el texto de las etiquetas.
         self.__alineacion = alineacion
+        # Altura de las filas de los datos
+        self.__alto_fila = alto_fila
+        self.__ancho_fila = ancho_fila
+        # Y las fuentes para los textos.
+        self.__color_filas = color_filas
+        self.__fuente_filas = (fuente_familia, fuente_tamaño, "")
+        self.__color_fuente_filas = color_fuente_filas
         # Comprobamos que todos los argumentos tengan el mismo número de
         # elementos.
         self.__columnas = len(ancho)
@@ -164,6 +168,9 @@ class Tabla(object):
         # podemos necesitarla para añadir eventos u otras cosas a dichos
         # campos.
         self.__cabecera = {}
+        # Construimos la fuente para la cabecera, que es la misma que para los
+        # datos, pero en negrita.
+        fuente = (fuente_familia, fuente_tamaño, "bold")
 
         # Dentro de la cabecera añadimos los datos.
         for col, dato in enumerate(cabecera):
@@ -178,31 +185,26 @@ class Tabla(object):
                 # columna.
                 continue
             
-            fuente = (self.__fuente_filas[0], self.__fuente_filas[1], "bold")
+            # Construimos la etiqueta para el texto de la cabecera.
             etiqueta_aux = tkinter.Label(
                 marco_cabecera, bg=color_cabecera, fg=color_fuente_cabecera,
+                text=dato, font=fuente, 
                 width=self.__ancho[col], height=1,
-                text=dato, font=fuente, padx=10)
+                padx=ancho_fila, pady=alto_cabecera)
             etiqueta_aux.grid(row=0, column=col, sticky="nsew", padx=1, pady=1)
             
-            # marco_aux = tkinter.Frame(
-            #     marco_cabecera, width=self.__ancho[col], height=alto_cabecera)
-            # marco_aux.grid(row=0, column=col, sticky="nsew", padx=1, pady=1)
-            # # Esta instrucción hace que el marco no se expanda si se expande
-            # # su contenido, en este caso, en función del texto de la celda.
-            # marco_aux.pack_propagate(False)
-            # # Y añadimos la etiqueta a la cabecera.
-            # etiqueta_aux = tkinter.Label(
-            #     marco_aux, bg=color_cabecera, fg=color_fuente_cabecera,
-            #     text=dato, font=fuente_cabecera)
-            # etiqueta_aux.pack(fill=tkinter.BOTH, expand=True)
             # Añadimos la etiqueta a la lista de controles de la cabecera.
             self.__cabecera[col] = etiqueta_aux
 
-            # Ajustamos los anchos de las columnas para las filas.
-            self.__marco_tabla.columnconfigure(col, weight=ajuste[col])
             # Ajustamos los anchos de las columnas para la cabecera.
             marco_cabecera.columnconfigure(col, weight=ajuste[col])
+            
+            # Aprovechamos el barrido en todas las columnas de la cabecera para
+            # fijar el ajuste de las columnas de la tabla.
+            # IMPORTANTE: Aquí debemos fijar el mismo valor para ambas (cabecera
+            # y tabla, ya que si no se redimensionarían de forma distinta y se
+            # desalinearían los bordes de ambas.
+            self.__marco_tabla.columnconfigure(col, weight=ajuste[col])
 
         # Añadimos una última columna, del tamaño de la barra de desplazamiento,
         # para que conserven el mismo tamaño la cabecera y el resto de filas.
@@ -306,7 +308,6 @@ class Tabla(object):
         # Guardamos en sendos diccionarios los marcos y etiquetas que creamos
         # para representar la fila.
         fila_celdas = {}
-        fila_marcos = {}
         for columna, dato in enumerate(valores):
             if self.__ancho[columna] == 0:
                 # Si el ancho es 0, nos indican que no debemos añadir esta
@@ -314,25 +315,12 @@ class Tabla(object):
                 continue
             etiqueta_celda = tkinter.Label(
                 self.__marco_tabla, fg=self.__color_fuente_filas,
-                text=dato, font=self.__fuente_filas, 
+                text=dato, font=self.__fuente_filas,
+                anchor=ANCHOR[self.__alineacion[columna]],  
                 width=self.__ancho[columna], height=1,
-                anchor=ANCHOR[self.__alineacion[columna]], padx=10)
+                padx=self.__ancho_fila, pady=self.__alto_fila)
             etiqueta_celda.grid(
                 row=fila, column=columna, sticky="nsew", padx=1, pady=1)
-            
-            # # Creamos el marco que contendrá la etiqueta.
-            # marco_celda = tkinter.Frame(self.__marco_tabla,
-            #                             width=self.__ancho[columna],
-            #                             height=self.__alto_datos)
-            # marco_celda.grid(
-            #     row=fila, column=columna, sticky="nsew", padx=1, pady=1)
-            # marco_celda.pack_propagate(False)
-            # # Y creamos la etiqueta dentro del marco anterior.
-            # etiqueta_celda = tkinter.Label(
-            #     marco_celda, fg=self.__color_fuente_filas,
-            #     text=dato, font=self.__fuente_filas,
-            #     anchor=ANCHOR[self.__alineacion[columna]], padx=10)
-            # etiqueta_celda.pack(fill=tkinter.BOTH, expand=True)
             
             # Asighamos el color de la celda en función de la configuración
             self.__color_celda(fila, columna, etiqueta_celda)
@@ -347,7 +335,7 @@ class Tabla(object):
             fila_celdas[columna] = etiqueta_celda
             # fila_marcos[columna] = marco_celda
         # Actualizamos la lista de controles añadidos.
-        self.__controles[fila] = {"L": fila_celdas, "F": fila_marcos}
+        self.__controles[fila] = fila_celdas
 
     def borrar_fila(self, fila):
         """
@@ -360,7 +348,7 @@ class Tabla(object):
             return
         # Eliminamos los controles de la interfaz, ya que sólo elimnandolos de
         # la lista no es suficiente para que desaparezcan.
-        for control in controles['L'].values():
+        for control in controles.values():
             control.destroy()
         del self.__controles[fila]
 
@@ -378,9 +366,8 @@ class Tabla(object):
             raise ValueError(
                 "Error al actualizar fila: número de columnas incorrecto")
 
-        etiquetas = controles['L']
-        for columna in etiquetas:
-            etiqueta = etiquetas[columna]
+        for columna in controles:
+            etiqueta = controles[columna]
             # Asignamos el texto de la celda.
             valor = valores[columna]
             etiqueta.config(text=valor if valor is not None else "")
@@ -412,7 +399,7 @@ class Tabla(object):
         # comprobar que al añadir nuevas filas, a estás también se les añade el
         # evento.
         for fila, controles in self.__controles.items():
-            controles['F'][columna].bind(
+            controles[columna].bind(
                 evento, partial(funcion, fila))
 
     def añadir_evento_cabecera(self, evento, columna, funcion):
