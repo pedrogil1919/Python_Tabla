@@ -21,7 +21,7 @@ class ElementoCombo():
 
     """
 
-    def __init__(self, codigo, seleccionado, texto=None):
+    def __init__(self, codigo, texto=None, seleccionado=False):
         """
         Argumentos:
         - codigo: Código (ID) de la base de datos del elemento.
@@ -42,14 +42,17 @@ class ElementoCombo():
         return self.__codigo
 
     def get_texto(self):
-        return self.__codgio if self.__texto is None else self.__texto
+        return self.__codigo if self.__texto is None else self.__texto
 
     def get_seleccionado(self):
         return self.__seleccionado
+    
+    def set_seleccionado(self, valor):
+        self.__seleccionado = valor
 
     codigo = property(get_codigo, None, None, None)
     texto = property(get_texto, None, None, None)
-    seleccionado = property(get_seleccionado, None, None, None)
+    seleccionado = property(get_seleccionado, set_seleccionado, None, None)
 
 ###############################################################################
 
@@ -92,10 +95,19 @@ class TablaEdicion(Tabla):
         """
         # Añadir los datos de la fila.
         super().añadir_fila(fila, valores)
-        # En las etiquetas ya creadas para esta fila, añadimos los eventos que
-        # se hayan configurado para esta tabla.
+        # Para aquellas columnas que no tengan combo asignado, le asignamos el
+        # evento de eliminar el combo activo. Esto es necesario por si el
+        # usuario, una vez activa un combo, quiere desactivarlo pulsando sobre
+        # otra celda de la tabla.
         for control in self._Tabla__controles[fila]['L'].values():
             control.bind("<Button-1>", self.__eliminar_control_activo)
+            
+        # Y por otro lado, añadimos a las etiquetas de las columnas que tienen
+        # combo asociado el evento para añadirlo en caso de que el usuario
+        # seleccione dicha celda.
+        for columna, valor in self.__combos.items():
+            self._Tabla__controles[fila]['L'][columna].bind(
+                valor["evento"], partial(self.__sustituir_combo, fila, columna))            
 
     def añadir_combo(self, evento, columna, lista, actualizar):
         """
@@ -126,7 +138,9 @@ class TablaEdicion(Tabla):
         # Guardamos las funciones para obtener la lista de elementos del combo
         # y la función para actualizar los datos una vez el usuario selecciona
         # una opción.
-        self.__combos[columna] = {"lista": lista, "actualizar": actualizar}
+        self.__combos[columna] = {"evento": evento, 
+                                  "lista": lista, 
+                                  "actualizar": actualizar}
 
         # Configuramos el evento en todas las celdas de esta columna.
         for fila, controles in self._Tabla__controles.items():
