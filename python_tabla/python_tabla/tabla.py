@@ -126,7 +126,7 @@ class Tabla(object):
         marco.columnconfigure(index=0, weight=1)
         # Respecto a la altura, fijamos una altura para la cabecera
         # y el resto lo debe ocupar la parte de los datos.
-        marco.rowconfigure(index=0, minsize=alto_cabecera, weight=0)
+        marco.rowconfigure(index=0, weight=0)
         marco.rowconfigure(index=1, weight=1)
         ########################################################################
         ########################################################################
@@ -177,17 +177,25 @@ class Tabla(object):
                 # Si el ancho es 0, nos indican que no debemos añadir esta
                 # columna.
                 continue
-            marco_aux = tkinter.Frame(
-                marco_cabecera, width=self.__ancho[col], height=alto_cabecera)
-            marco_aux.grid(row=0, column=col, sticky="nsew", padx=1, pady=1)
-            # Esta instrucción hace que el marco no se expanda si se expande
-            # su contenido, en este caso, en función del texto de la celda.
-            marco_aux.pack_propagate(False)
-            # Y añadimos la etiqueta a la cabecera.
+            
+            fuente = (self.__fuente_filas[0], self.__fuente_filas[1], "bold")
             etiqueta_aux = tkinter.Label(
-                marco_aux, bg=color_cabecera, fg=color_fuente_cabecera,
-                text=dato, font=fuente_cabecera)
-            etiqueta_aux.pack(fill=tkinter.BOTH, expand=True)
+                marco_cabecera, bg=color_cabecera, fg=color_fuente_cabecera,
+                width=self.__ancho[col], height=1,
+                text=dato, font=fuente, padx=10)
+            etiqueta_aux.grid(row=0, column=col, sticky="nsew", padx=1, pady=1)
+            
+            # marco_aux = tkinter.Frame(
+            #     marco_cabecera, width=self.__ancho[col], height=alto_cabecera)
+            # marco_aux.grid(row=0, column=col, sticky="nsew", padx=1, pady=1)
+            # # Esta instrucción hace que el marco no se expanda si se expande
+            # # su contenido, en este caso, en función del texto de la celda.
+            # marco_aux.pack_propagate(False)
+            # # Y añadimos la etiqueta a la cabecera.
+            # etiqueta_aux = tkinter.Label(
+            #     marco_aux, bg=color_cabecera, fg=color_fuente_cabecera,
+            #     text=dato, font=fuente_cabecera)
+            # etiqueta_aux.pack(fill=tkinter.BOTH, expand=True)
             # Añadimos la etiqueta a la lista de controles de la cabecera.
             self.__cabecera[col] = etiqueta_aux
 
@@ -304,21 +312,30 @@ class Tabla(object):
                 # Si el ancho es 0, nos indican que no debemos añadir esta
                 # columna
                 continue
-            # Creamos el marco que contendrá la etiqueta.
-            marco_celda = tkinter.Frame(self.__marco_tabla,
-                                        width=self.__ancho[columna],
-                                        height=self.__alto_datos)
-            marco_celda.grid(
-                row=fila, column=columna, sticky="nsew", padx=1, pady=1)
-            marco_celda.pack_propagate(False)
-            # Y creamos la etiqueta dentro del marco anterior.
             etiqueta_celda = tkinter.Label(
-                marco_celda, fg=self.__color_fuente_filas,
-                text=dato, font=self.__fuente_filas,
+                self.__marco_tabla, fg=self.__color_fuente_filas,
+                text=dato, font=self.__fuente_filas, 
+                width=self.__ancho[columna], height=1,
                 anchor=ANCHOR[self.__alineacion[columna]], padx=10)
+            etiqueta_celda.grid(
+                row=fila, column=columna, sticky="nsew", padx=1, pady=1)
+            
+            # # Creamos el marco que contendrá la etiqueta.
+            # marco_celda = tkinter.Frame(self.__marco_tabla,
+            #                             width=self.__ancho[columna],
+            #                             height=self.__alto_datos)
+            # marco_celda.grid(
+            #     row=fila, column=columna, sticky="nsew", padx=1, pady=1)
+            # marco_celda.pack_propagate(False)
+            # # Y creamos la etiqueta dentro del marco anterior.
+            # etiqueta_celda = tkinter.Label(
+            #     marco_celda, fg=self.__color_fuente_filas,
+            #     text=dato, font=self.__fuente_filas,
+            #     anchor=ANCHOR[self.__alineacion[columna]], padx=10)
+            # etiqueta_celda.pack(fill=tkinter.BOTH, expand=True)
+            
             # Asighamos el color de la celda en función de la configuración
             self.__color_celda(fila, columna, etiqueta_celda)
-            etiqueta_celda.pack(fill=tkinter.BOTH, expand=True)
             # comprobamos si hay que añadir también eventos a la etiqueta.
             for ev in self.__eventos.get(columna, []):
                 # En este caso, el primer elemento incluye el nombre del
@@ -328,7 +345,7 @@ class Tabla(object):
                 etiqueta_celda.bind(evento, partial(funcion, fila))
 
             fila_celdas[columna] = etiqueta_celda
-            fila_marcos[columna] = marco_celda
+            # fila_marcos[columna] = marco_celda
         # Actualizamos la lista de controles añadidos.
         self.__controles[fila] = {"L": fila_celdas, "F": fila_marcos}
 
@@ -343,7 +360,7 @@ class Tabla(object):
             return
         # Eliminamos los controles de la interfaz, ya que sólo elimnandolos de
         # la lista no es suficiente para que desaparezcan.
-        for control in controles['F'].values():
+        for control in controles['L'].values():
             control.destroy()
         del self.__controles[fila]
 
