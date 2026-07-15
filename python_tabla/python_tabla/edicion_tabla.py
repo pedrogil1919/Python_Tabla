@@ -9,6 +9,7 @@ Created on 22 abr 2026
 '''
 
 from functools import partial
+import tkinter
 from tkinter import ttk
 
 from .tabla import Tabla
@@ -74,18 +75,30 @@ class TablaEdicion(Tabla):
         self.__valor_inicial_combo = None
         # Similar, pero para controles tipo Entry (no implementado)
         self.__texto = {}
-        # Guardamos la referencia al útlimo control activo. Es necesario para
+        # Guardamos la referencia al último control activo. Es necesario para
         # eliminarlo una vez finalizamos la edición, y para acceder a sus
         # eventos y propiedades durante la edición.
         self.__control_activo = None
-        # Variable necesaria para poder desactivar el último control activo
-        # una vez el control pierde el foco.
+        # Además, necesitamos un marco donde situar el combo, ya que no es
+        # posible fijar el mismo ancho a partir del ancho de la etiqueta (el
+        # parámetro width no significa exáctamente lo mismo). Por eso, lo que
+        # hacemos es crear un marco del mismo tamaño en píxeles que la etiqueta
+        # donde vamos a poner el combo, y creamos el combo dentro del marco.
+        self.__marco_activo = None
+        # Variable necesaria para poder sustituir el combo por la etiqueta de
+        # la tabla.
         self.__etiqueta_activa = None
-        # Guardamos la información de pack, para que al volver a añadir la
+        # Guardamos la información de grid, para que al volver a añadir la
         # etiqueta, conserve la misma geometría.
-        self.__pack_info_etiqueta = None
-
+        self.__grid_info_etiqueta = None
+        # Inicializamos la tabla llamando al constructor de la clase principal.
         super().__init__(*arg, **kwargs)
+        # Asginamos el evento click al marco de la tabla donde van las etiquetas
+        # de la tabla.
+        # NOTA: Dentro de las etiquetas también va el mismo evento. Sin embargo,
+        # hacerlo aquí es necesario, porque si no, si justo hacemos click sobre
+        # el borde de la tabla, no funciona (ver función añadir_fila).
+        self._Tabla__marco_tabla.bind("<Button-1>", self.__eliminar_control_activo)
 
     def añadir_fila(self, fila, valores):
         """
@@ -95,28 +108,35 @@ class TablaEdicion(Tabla):
         """
         # Añadir los datos de la fila.
         super().añadir_fila(fila, valores)
-        # Para aquellas columnas que no tengan combo asignado, le asignamos el
-        # evento de eliminar el combo activo. Esto es necesario por si el
-        # usuario, una vez activa un combo, quiere desactivarlo pulsando sobre
-        # otra celda de la tabla.
-        for control in self._Tabla__controles[fila]['L'].values():
+        # Para todas las etiquetas, le asignamos el evento de eliminar el combo
+        # activo. Esto es necesario por si el usuario, una vez activa un combo, 
+        # quiere desactivarlo sin seleccionar ninguna opción. Esto se consigue
+        # pulsando sobre cualquier otra celda.
+        # NOTA: Las columnas que tienen combo también deben llevar este evento,
+        # ya que cuando esa celda no tiene el combo seleccionado, lo que tiene
+        # es la etiqueta, y debe comportarse igual que una celda sin combo.
+        # NOTA: Haciendo sólo esto, funciona si hacemos click sobre la etiqueta,
+        # pero no funciona si hacemos click justo sobre los bordes de las celdas.
+        # Por eso, en el constructor hay que asignar también este evento.
+        for control in self._Tabla__controles[fila].values():
             control.bind("<Button-1>", self.__eliminar_control_activo)
             
         # Y por otro lado, añadimos a las etiquetas de las columnas que tienen
         # combo asociado el evento para añadirlo en caso de que el usuario
         # seleccione dicha celda.
         for columna, valor in self.__combos.items():
-            self._Tabla__controles[fila]['L'][columna].bind(
+            self._Tabla__controles[fila][columna].bind(
                 valor["evento"], partial(self.__sustituir_combo, fila, columna))            
 
     def añadir_combo(self, evento, columna, lista, actualizar):
         """
         Añadir un combo para poder editar los datos de la tabla. El combo
-        aparece cuando el usuario selecciona una celda correspondeinte a la
+        aparece cuando el usuario selecciona una celda correspondiente a la
         columna sobre la que se ha añadido el combo.
 
         Argumentos:
-        - evento: tipo de evento al que hay que atender:
+        - evento: tipo de evento al que hay que atender, es decir, qué debe
+          hacer el usuario para que aparezca el combo:
           - "<Button-1>"
           - "<Double-Button-1>"
           - ...
@@ -144,7 +164,7 @@ class TablaEdicion(Tabla):
 
         # Configuramos el evento en todas las celdas de esta columna.
         for fila, controles in self._Tabla__controles.items():
-            controles['L'][columna].bind(
+            controles[columna].bind(
                 evento, partial(self.__sustituir_combo, fila, columna))
 
     def __sustituir_combo(self, fila, columna, evento=None):
@@ -152,15 +172,20 @@ class TablaEdicion(Tabla):
         Función para sustituir la etiqueta de la celda por un combobox.
 
         """
-        # Eliminaos el útlimo control activo, si huviera alguno.
+        # Eliminamos el último control activo, si huviera alguno.
         self.__eliminar_control_activo()
+        
         # Eliminamos la etiqueta actual, y la sustituimos por un combo.
-        self.__etiqueta_activa = self._Tabla__controles[fila]['L'][columna]
-        # Guardamos la configuración geométrica de la etiqueta, para que al
-        # volver a hacerla aparecer, quede igual que antes de la edición.
-        self.__pack_info_etiqueta = self.__etiqueta_activa.pack_info()
+        self.__etiqueta_activa = self._Tabla__controles[fila][columna]
+        # # Guardamos la configuración geométrica de la etiqueta, para que al
+        # # volver a hacerla aparecer, quede igual que antes de la edición.
+        self.__grid_info_etiqueta = self.__etiqueta_activa.grid_info()
+        # Copiamos los parámetros de la etiqueta, para pasárselos al combo y que
+        # se visualice lo más parecido posible:
+        config_etiqueta = {k: v[-1] for k, v in self.__etiqueta_activa.configure().items()}
         # Hacemos desaparece la etiqueta.
-        self.__etiqueta_activa.pack_forget()
+        self.__etiqueta_activa.grid_forget()
+        
         # A partir de aquí comienza la configuración del combobox. En primer
         # lugar, obtenemos los elementos a mostrar en la lista.
         lista = self.__combos[columna]["lista"]
@@ -186,16 +211,33 @@ class TablaEdicion(Tabla):
                 # con el último de todos.
                 inicial = indice
 
-        # Actualizamos el tipo de fuente para el desplegable.
-        # NOTA: Tkinter no permite configurar esto para cada combobox, sino que
-        # se fija el mismo para todos los combos de la aplicación.
-        self._Tabla__controles[fila]['F'][columna].option_add(
-            "*TCombobox*Listbox.font", self._Tabla__fuente_filas)
+        # Creamos un marco donde situar el combo. De esta forma, conseguimos que
+        # el tamaño del combo sea exactamente el mismo que el de la etiqueta, y
+        # así no cambia el tamaño de la celda seleccionada.
+        self.__marco_activo = tkinter.Frame(self._Tabla__marco_tabla)
+        self.__marco_activo.grid(self.__grid_info_etiqueta)
+        self.__marco_activo.pack_propagate(False)
+
         # Finalmente creamos el combobox con la lista de valores obtenida
         # anteriormente.
         self.__control_activo = ttk.Combobox(
-            self._Tabla__controles[fila]['F'][columna], values=valores,
-            font=self._Tabla__fuente_filas, state="readonly")
+            self.__marco_activo, values=valores, state="readonly")
+        # Para que el aspecto del combo sea similar al de la etiqueta que
+        # sustituye, copiamos los parámetros de la etiqueta que cogimos al
+        # comienzo de la función, y se los pasamos al combo. Como ambos
+        # controles no tienen los mismos parámetros, en primer lugar cogemos
+        # los parámetros que tiene el combo...
+        parametros_combo = self.__control_activo.keys()
+        # Pero eliminamos el parámetro height, ya que su significado es
+        # distinto.
+        parametros_combo.remove("height")
+        # Eliminamos los parámetros que no son comunes a ambos controles 
+        config_combo = {k: v for k, v in config_etiqueta.items() if k in parametros_combo}
+        # y sólo cogemos los que tienen ambos.
+        self.__control_activo.configure(**config_combo)        
+        # Finalmente, visualizamos el combo.
+        self.__control_activo.pack(fill=tkinter.BOTH, expand=True)
+        
         if inicial is not None:
             # Guardamos el valor inicial, por si tenemos que vevolverlo a su
             # valor inicial en caso de error.
@@ -205,14 +247,11 @@ class TablaEdicion(Tabla):
             self.__control_activo.current(self.__valor_inicial_combo)
         else:
             self.__valor_inicial_combo = None
-        # Función que atiende al evento de selección. El evento se distara
+        # Función que atiende al evento de selección. El evento se dispara
         # tanto si se selecciona con el ratón o con enter del teclado.
         self.__control_activo.bind(
             "<<ComboboxSelected>>",
             partial(self.__seleccion_combo, fila, columna))
-        # Añadimos el combo con la misma configuración geométrica que la
-        # etiqueta de la celda.
-        self.__control_activo.pack(self.__pack_info_etiqueta)
         # Desactivamos el combo cuando el usuario pulse Escape..
         self.__control_activo.bind(
             "<Escape>", self.__eliminar_control_activo)
@@ -246,11 +285,12 @@ class TablaEdicion(Tabla):
 
     def __eliminar_control_activo(self, evento=None):
         # Eliminar el último control que hemos estado editando, y lo sustituimos
-        # por la etiqueta de dicha celda.
-        if self.__control_activo is not None:
-            self.__control_activo.destroy()
+        # por la etiqueta de dicha celda. Para ello, eliminamos el marco sobre el
+        # cual colocamos el combo. Con esto, desaparecen ambos controles.
+        if self.__marco_activo is not None:
+            self.__marco_activo.destroy()
         if self.__etiqueta_activa is not None:
-            self.__etiqueta_activa.pack(**self.__pack_info_etiqueta)
+            self.__etiqueta_activa.grid(**self.__grid_info_etiqueta)
             self.__etiqueta_activa = None
 
     def __perdida_foco_combo(self, evento=None):
