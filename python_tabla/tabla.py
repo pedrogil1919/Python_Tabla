@@ -328,7 +328,11 @@ class Tabla(object):
             raise ValueError(
                 "Error añadir fila: número de columnas incorrecto")
 
-        # Guardamos en sendos diccionarios los marcos y etiquetas que creamos
+        # Comprobamos si hay que asignar un color a la fila completa, en 
+        # función de la función que se haya definido para ello.
+        color_fila = self.__color_fila(fila)
+        
+        # Guardamos en un diccionario las etiquetas que creamos
         # para representar la fila.
         fila_celdas = {}
         for columna, dato in enumerate(valores):
@@ -337,16 +341,16 @@ class Tabla(object):
                 # columna
                 continue
             etiqueta_celda = tkinter.Label(
-                self.__marco_tabla, fg=self.__color_fuente_filas,
-                text=dato, font=self.__fuente_filas,
+                self.__marco_tabla, fg=self.__color_fuente_celdas,
+                text=dato, font=self.__fuente_celdas,
                 anchor=ANCHOR[self.__alineacion[columna]],  
                 width=self.__ancho[columna], height=1,
                 padx=self.__ancho_fila, pady=self.__alto_fila)
             etiqueta_celda.grid(
                 row=fila, column=columna, sticky="nsew", padx=1, pady=1)
             
-            # Asighamos el color de la celda en función de la configuración
-            self.__color_celda(fila, columna, etiqueta_celda)
+            # Asigamos el color de la celda en función de la configuración
+            self.__color_celda(fila, columna, etiqueta_celda, color_fila)
             # comprobamos si hay que añadir también eventos a la etiqueta.
             for ev in self.__eventos.get(columna, []):
                 # En este caso, el primer elemento incluye el nombre del
@@ -389,13 +393,17 @@ class Tabla(object):
             raise ValueError(
                 "Error al actualizar fila: número de columnas incorrecto")
 
+        # Comprobamos si hay que asignar un color a la fila completa, en 
+        # función de la función que se haya definido para ello.
+        color_fila = self.__color_fila(fila)
+
         for columna in controles:
             etiqueta = controles[columna]
             # Asignamos el texto de la celda.
             valor = valores[columna]
             etiqueta.config(text=valor if valor is not None else "")
             # y su color, en fucnión del valor.
-            self.__color_celda(fila, columna, etiqueta)
+            self.__color_celda(fila, columna, etiqueta, color_fila)
 
 ################################################################################
 # Eventos sobre las celdas de la tabla, y sobre los campos de la cabecera.
@@ -457,9 +465,57 @@ class Tabla(object):
         asignará el color por defecto de la tabla.
 
         """
+        # TODO: Añadir la posibilidad de que el usuario cambie la función de 
+        # color de una columna, de tal forma que habría que actualizar el color
+        # de todas las celdas de esa columna que ya estén creadas.
+        if color is None:
+            # Si no se ha definido color por defecto, le asignamos el color
+            # por defecto de la tabla.
+            color = self.__color_celdas
+                    
         self.__color_columna[columna] = {
             'C': color,
             'F': funcion}
+
+    def definir_color_fila(self, funcion):
+        """
+        Definir el color para representar una fila completa. La función debe
+        devolver un código de color de tkinter, y debe tomar como argumentos
+        la fila de la celda. La función se aplicará
+        a todas las celdas de la fila, y si devuelve None, se aplicará
+        el color por defecto de la tabla.
+        
+        """
+        # TODO: Igual que en la función definir_color_columna, habría que 
+        # actualizar el color de todas las filas que ya estén creadas.
+        self.__color_fila = funcion
+
+    def __color_celda(self, fila, columna, etiqueta, color_defecto=None):
+        """
+        Asigna el color para la celda correspondiente
+
+        """
+        # Comprobmos si existe una función para calcular el color de la celda en función del valor
+        try:
+            color_columna = self.__color_columna[columna]
+        except KeyError:
+            # Si no se ha definido ninguna regla para determinar el color de
+            # esta columna:
+            color = color_defecto
+        else:
+            try:
+                funcion_color = color_columna['F']
+                color = funcion_color(fila, columna, etiqueta["text"])
+            except (KeyError, TypeError):
+                # NOTA:
+                # KeyError: No se ha definido ninguna función para calcular el color de la celda.
+                # TypeError: La función definida no es válida, no toma los 
+                # argumentos correctos, o no devuelve un valor válido.
+                # En todos estos casos, se aplica el color por defecto de la
+                # celda.
+                color = color_columna['C']
+
+        etiqueta.config(bg=color)
 
 ################################################################################
 # Funciones auxiliares para formatear los datos de entrada.
@@ -527,33 +583,6 @@ class Tabla(object):
         # Hacemos que el ancho del frame donde se crea la tabla se ajuste
         # al ancho del canvas donde lo hemos añadido.
         self.__canvas.itemconfig('frame', width=self.__canvas.winfo_width())
-
-################################################################################
-################################################################################
-
-    def __color_celda(self, fila, columna, etiqueta):
-        """
-        Asigna el color para la celda correspondiente
-
-        """
-        # Comprobamos si el color para esta columna ha sido asignado.
-        try:
-            color_defecto = self.__color_columna[columna]['C']
-            funcion = self.__color_columna[columna]['F']
-        except KeyError:
-            # En caso de que no exista, asignamos el color por defecto de la
-            # tabla
-            color = self.__color_filas
-        else:
-            # Comprobamos si tenemos una función para calcular el color de
-            # la celda
-            try:
-                color = funcion(fila, columna, etiqueta["text"])
-            except ValueError:
-                color = color_defecto
-            # TODO: fila_completa indica que hay que pintar de ese color toda la
-            # fila, no solo la celda.
-        etiqueta.config(bg=color)
 
     def __get_ancho_tabla(self):
         return self.__ancho_tabla
