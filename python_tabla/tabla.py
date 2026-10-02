@@ -259,6 +259,11 @@ class Tabla(object):
             self.__canvas, self.__marco_tabla, self.__barra)
 
 ################################################################################
+# Fin de constructor de la tabla.
+################################################################################
+
+################################################################################
+# Funciones para añadir, borrar y actualizar filas de la tabla.
 ################################################################################
 
     def refrescar(self, datos, solo_actualizar=False):
@@ -393,7 +398,9 @@ class Tabla(object):
             self.__color_celda(fila, columna, etiqueta)
 
 ################################################################################
+# Eventos sobre las celdas de la tabla, y sobre los campos de la cabecera.
 ################################################################################
+
     def añadir_evento(self, evento, columna, funcion):
         """
         Añade un evento en una columna determinada para todas las filas
@@ -428,7 +435,11 @@ class Tabla(object):
         """
         self.__cabecera[columna].bind(evento, funcion)
 
-    def definir_color_columna(self, columna, color, funcion=None):
+################################################################################
+# Definición de colores para las celdas de la tabla.
+################################################################################
+
+    def definir_color_columna(self, columna, color=None, funcion=None):
         """
         Definir el color para representar una celda
         Argumentos:
@@ -450,6 +461,9 @@ class Tabla(object):
             'C': color,
             'F': funcion}
 
+################################################################################
+# Funciones auxiliares para formatear los datos de entrada.
+################################################################################
     @staticmethod
     def formatear_lista_tabla(datos):
         """
@@ -481,8 +495,9 @@ class Tabla(object):
             filas[orden] = dato[1:]
         return filas
 
-
 ################################################################################
+# Funciones auxiliares para actualizar el tamaño de la tabla, y para fijar
+# el tamaño de la ventana contenedora.
 ################################################################################
     def __actualizar_tamaño(self, event=None):
 
@@ -548,3 +563,8 @@ class Tabla(object):
 
     ancho_tabla = property(__get_ancho_tabla, None, None, None)
     desp_vertical = property(None, __set_desp_vertical, None, None)
+
+################################################################################
+# Fin del archivo tabla.py
+################################################################################
+    
