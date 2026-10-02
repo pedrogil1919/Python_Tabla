@@ -29,8 +29,19 @@ Entre los parámetros de la tabla figura el ancho, en píxeles, de cada columna.
 Si el ancho es 0, significa que no se debe añadir esa columna.
 
 @author: pedrogil
+
 '''
 
+# Definición de colores por defecto para la tabla, que se pueden cambiar en el
+# constructor de la tabla, o bien mediante la función definir_color_columna,
+# y la función definir_color_fila.
+COLOR_BORDE = "black"
+COLOR_FONDO = "gray84"
+COLOR_CABECERA = "lightSalmon2"
+COLOR_CELDAS = "AntiqueWhite1"
+COLOR_FUENTE_CABECERA = "black"
+COLOR_FUENTE_CELDAS = "black"
+FAMILIA_FUENTE = "LIBERATION SANS"
 
 from functools import partial
 import tkinter
@@ -54,14 +65,14 @@ class Tabla(object):
                  alto_cabecera=1,
                  alto_fila=0.5,
                  ancho_fila=2.5,
-                 color_borde="black",
-                 color_fondo="gray",
-                 color_cabecera="blue",
-                 color_filas="white",
-                 fuente_familia="LIBERATION SANS",
+                 color_borde=COLOR_BORDE,
+                 color_fondo=COLOR_FONDO,
+                 color_cabecera=COLOR_CABECERA,
+                 color_celdas=COLOR_CELDAS,
+                 fuente_familia=FAMILIA_FUENTE,
                  fuente_tamaño=20,
-                 color_fuente_cabecera="black",
-                 color_fuente_filas="black"):
+                 color_fuente_cabecera=COLOR_FUENTE_CABECERA,
+                 color_fuente_celdas=COLOR_FUENTE_CELDAS):
         """
         Construcción de la tabla, y configuración.
 
