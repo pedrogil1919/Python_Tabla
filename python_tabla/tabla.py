@@ -257,6 +257,14 @@ class Tabla(object):
         # vertical de la tabla.
         self.__vertical = Desplazamiento(
             self.__canvas, self.__marco_tabla, self.__barra)
+        
+        # Creamos una cache donde guardaremos los datos que estamos añadiendo
+        # en la tabla. De esta forma, los eventos que llaman a funciones
+        # externas, como la de actualizar el color de la celda, no tiene que
+        # volver a consultar la fuente de datos original, sino que puede
+        # emplear los datos que estamos utilizando para rellenar la tabla.
+        # (ver por ejemplo función __color_celda)
+        self.__cache_datos = None
 
 ################################################################################
 # Fin de constructor de la tabla.
@@ -281,6 +289,10 @@ class Tabla(object):
         refrescadas.
 
         """
+        # Guardamos en cache los datos con los que vamos a rellenar la tabla
+        # por si son utilizados por los eventos que emplean funciones externas.
+        # La cache se libera al finalizar la función de refrescar.
+        self.__cache_datos = datos
         # Guardamos el total de filas que tenemos antes de añadir o eliminar
         # ninguna fila.
         total = len(self.__controles)
@@ -314,6 +326,11 @@ class Tabla(object):
         if len(self.__controles) != total:
             self.__marco_tabla.update_idletasks()
             self.__actualizar_tamaño()
+        
+        # Limpiamos la cache. A partir de ahora, si los módulos que emplean
+        # la tabla necesitan datos, tienen que volver a consultarlos en la
+        # fuente de datos original.
+        self.__cache_datos = None
 
     def añadir_fila(self, fila, valores):
         """
@@ -457,7 +474,11 @@ class Tabla(object):
         - funcion: función que permite calcular el color de la celda en función
           del valor de esta. Debe ser una función que devuelva un código de
           color de tkinter, y que toma como argumentos la fila, la columna y
-          el valor de la celda.
+          el valor de la celda. Opcionalmente, puede recibir los datos
+          correspondientes a la fila actual. Esto está pensado para que la
+          función llamante no tenga que consultar la fuente de datos original,
+          si es posible.
+          - color = funcion(fila, columna, valor, datos=None)
 
         La tabla asignará inicialmente el color devuelto por la función. Si
         el valor devuelto es None, o bien no existe la función, le asignará
@@ -481,9 +502,10 @@ class Tabla(object):
         """
         Definir el color para representar una fila completa. La función debe
         devolver un código de color de tkinter, y debe tomar como argumentos
-        la fila de la celda. La función se aplicará
-        a todas las celdas de la fila, y si devuelve None, se aplicará
-        el color por defecto de la tabla.
+        la fila de la celda, y opcionalmente los datos de la fila (ver función
+        definir_color_columna). La función se aplicará a todas las celdas de la 
+        fila, y si devuelve None, se aplicará el color por defecto de la tabla.
+        
         
         """
         # TODO: Igual que en la función definir_color_columna, habría que 
@@ -505,7 +527,13 @@ class Tabla(object):
         else:
             try:
                 funcion_color = color_columna['F']
-                color = funcion_color(fila, columna, etiqueta["text"])
+                # Obtenemos los datos correspondientes a la fila que estamos
+                # actualizando,
+                datos_fila = self.__cache_datos[fila]
+                # y se lo envaimos a la función llamante. Si dicha función está
+                # optimizada, podrá hacer uso de estos datos y no tendrá que
+                # volver a consultarlos en la fuente de datos original.
+                color = funcion_color(fila, columna, etiqueta["text"], datos_fila)
             except (KeyError, TypeError):
                 # NOTA:
                 # KeyError: No se ha definido ninguna función para calcular el color de la celda.
