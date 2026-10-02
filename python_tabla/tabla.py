@@ -102,22 +102,6 @@ class Tabla(object):
         lanza una excepción de tipo ValueError.
 
         """
-        # ancho, ajuste, alineacion,
-        # alto_cabecera, alto_datos,
-
-        # Guardamos los datos de configuración de la tabla que sean necesarios
-        # fuera del constructor.
-        # Ancho de las columnas.
-        self.__ancho = ancho
-        # Guardamos la forma de alinear el texto de las etiquetas.
-        self.__alineacion = alineacion
-        # Altura de las filas de los datos
-        self.__alto_fila = alto_fila
-        self.__ancho_fila = ancho_fila
-        # Y las fuentes para los textos.
-        self.__color_filas = color_filas
-        self.__fuente_filas = (fuente_familia, fuente_tamaño, "")
-        self.__color_fuente_filas = color_fuente_filas
         # Comprobamos que todos los argumentos tengan el mismo número de
         # elementos.
         self.__columnas = len(ancho)
@@ -129,6 +113,38 @@ class Tabla(object):
                 "Error tabla: lista de alineación de columnas incorrecta")
 
         ########################################################################
+        # Guardamos los datos de configuración de la tabla que sean necesarios
+        # fuera del constructor.
+        # Ancho de las columnas.
+        self.__ancho = ancho
+        # Guardamos la forma de alinear el texto de las etiquetas.
+        self.__alineacion = alineacion
+        # Altura y anchura extra que se añade a cada fila, para hacerlas más 
+        # grandes.
+        self.__alto_fila = alto_fila
+        self.__ancho_fila = ancho_fila
+        # Y las fuentes para los textos.
+        self.__color_celdas = color_celdas
+        self.__fuente_celdas = (fuente_familia, fuente_tamaño, "")
+        self.__color_fuente_celdas = color_fuente_celdas
+        # Función para configurar el color de las celdas para cada columna.
+        # Si para una columna concreta la clave no existe en el diccionario,
+        # la celda se representará con el color por defecto.
+        self.__color_columna = {}
+        # Función para configurar el color de las filas completas. Definimos
+        # una función lambda que devuelve el color por defecto de las celdas, 
+        # para que si no se ha definido ninguna función para el color de las 
+        # filas, se aplique el color por defecto para las celdas
+        self.__color_fila = lambda __: self.__color_celdas
+        
+        # Creamos un diccionario para guardar la lista de etiquetas que
+        # representan las celdas, para poder acceder a ellas cuando queramos
+        # actualizar o borrar filas.
+        self.__controles = {}
+        # Creamos una lista de todos los eventos que tenemos que añaidr en las
+        # celdas de las tablas.
+        self.__eventos = {}
+        
         ########################################################################
         # Construimos un marco para la cabecera
         marco_cabecera = tkinter.Frame(marco, bg=color_borde)
@@ -143,9 +159,8 @@ class Tabla(object):
         # y el resto lo debe ocupar la parte de los datos.
         marco.rowconfigure(index=0, weight=0)
         marco.rowconfigure(index=1, weight=1)
+        
         ########################################################################
-        ########################################################################
-
         # Creamos un Canvas para que se pueda añadir una barra de desplazamiento
         # vertical cuando el número de filas sea grande.
         self.__canvas = tkinter.Canvas(marco_canvas, bg=color_fondo)
@@ -168,6 +183,7 @@ class Tabla(object):
         # Y el resto se lo queda el marco que contiene los datos.
         marco_canvas.columnconfigure(0, weight=1)
 
+        ########################################################################
         # Finalmente, construimos el marco donde crearemos la tabla con las
         # filas de datos.
         self.__marco_tabla = tkinter.Frame(self.__canvas, bg=color_borde)
@@ -175,6 +191,7 @@ class Tabla(object):
         self.__canvas.create_window(
             (1, 1), window=self.__marco_tabla, anchor="nw", tags="frame")
 
+        ########################################################################
         # Creamos una lista para todos los campos de la cabecera, ya que
         # podemos necesitarla para añadir eventos u otras cosas a dichos
         # campos.
@@ -222,29 +239,19 @@ class Tabla(object):
         marco_cabecera.columnconfigure(
             self.__columnas, minsize=self.__barra.winfo_reqwidth(), weight=0)
 
+        ########################################################################
         # Guardamos el ancho actual del marco, que se corresponderá con el
         # ancho mínimo, para que la ventana contenedora se ajuste su valor
         # mínimo a esta medida.
         marco.update_idletasks()
         self.__ancho_tabla = marco_cabecera.winfo_reqwidth()
 
+        ########################################################################
         # Asociamos eventos para que se ajuste todo cuando cambie el tamaño del
         # canvas (porque se ha redimensionado la ventana principal) o el marco
         # (porque se han añadido / quitado filas).
         self.__marco_tabla.bind("<Configure>", self.__actualizar_tamaño)
         self.__canvas.bind("<Configure>", self.__actualizar_tamaño)
-
-        # Creamos un diccionario para guardar la lista de etiquetas que
-        # representan las celdas, para poder acceder a ellas cuando queramos
-        # actualizar o borrar filas.
-        self.__controles = {}
-        # Creamos una lista de todos los eventos que tenemos que añaidr en las
-        # celdas de las tablas.
-        self.__eventos = {}
-        # Función para configurar el color de las celdas para cada columna.
-        # Si para una columna concreta la clave no existe en el diccionario,
-        # la celda se representará con el color por defecto.
-        self.__color_columna = {}
 
         # Al iniciar la tabla, permitimos la activación del desplazamiento
         # vertical de la tabla.
