@@ -15,7 +15,7 @@ from tkinter import ttk
 from .tabla import Tabla
 
 
-class ElementoCombo():
+class ElementoComboTabla():
     """
     Para edición mediante combo, formato con el que pasar cada uno de los
     elementos de la lista desplegable del combo.
@@ -145,7 +145,7 @@ class TablaEdicion(Tabla):
           Puede ser una lista de elementos, o bien puede ser un generador. En
           este último caso, el generador deberá aceptar como arguemento, un
           entero correspondiente a la fila seleccionada. Los elementos de esta
-          lista deben ser del tipo ElementoCombo().
+          lista deben ser del tipo ElementoComboTabla().
         - actualizar: función que se ejecuta una vez el usuario selecciona un
           elemento del combo. Si no selecciona ninguno (por ejemplo, pulsa
           escape, o bien hace click sobre otra parte de la tabla, no se
@@ -200,7 +200,7 @@ class TablaEdicion(Tabla):
         valores = []
         # Variable para obtener el elemento inicial que estará seleccionado en
         # el combo al desplegarlo. Recordemos que el valor inicial viene
-        # indicado en la variable "seleccionado" de la clase ElementoCombo.
+        # indicado en la variable "seleccionado" de la clase ElementoComboTabla.
         inicial = None
         for indice, item in enumerate(self.__valores_combo):
             # Añadimos el texto de la etiqueta a la lista de textos.
