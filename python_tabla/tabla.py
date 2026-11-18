@@ -489,14 +489,15 @@ class Tabla(object):
         # TODO: Añadir la posibilidad de que el usuario cambie la función de 
         # color de una columna, de tal forma que habría que actualizar el color
         # de todas las celdas de esa columna que ya estén creadas.
-        if color is None:
-            # Si no se ha definido color por defecto, le asignamos el color
-            # por defecto de la tabla.
-            color = self.__color_celdas
+
                     
-        self.__color_columna[columna] = {
-            'C': color,
-            'F': funcion}
+        self.__color_columna[columna] = {}
+        # Solo añadimos las claves que no sean None. Esto se combina con la función
+        #_color_celda, ya que así le permite determinar en qué datos debe fijarse.
+        if color is not None:
+            self.__color_columna[columna]['C'] = color
+        if funcion is not None:
+            self.__color_columna[columna]['F'] = funcion
 
     def definir_color_fila(self, funcion):
         """
@@ -522,10 +523,14 @@ class Tabla(object):
             color_columna = self.__color_columna[columna]
         except KeyError:
             # Si no se ha definido ninguna regla para determinar el color de
-            # esta columna:
+            # esta columna, cogemos el color por defecto de la fila, que
+            # puede ser el color por defecto de la tabla, o bien el asignado
+            # a la fila completa.
             color = color_defecto
         else:
             try:
+                # Comprobamos si tenemos definida la función de cálculo del color
+                # de la celda.
                 funcion_color = color_columna['F']
                 # Obtenemos los datos correspondientes a la fila que estamos
                 # actualizando,
@@ -536,12 +541,18 @@ class Tabla(object):
                 color = funcion_color(fila, columna, etiqueta["text"], datos_fila)
             except (KeyError, TypeError):
                 # NOTA:
-                # KeyError: No se ha definido ninguna función para calcular el color de la celda.
+                # KeyError: No se ha definido ninguna función para calcular el color
+                # de la celda.
                 # TypeError: La función definida no es válida, no toma los 
                 # argumentos correctos, o no devuelve un valor válido.
                 # En todos estos casos, se aplica el color por defecto de la
                 # celda.
-                color = color_columna['C']
+                try:
+                    # Comprobamos si esta columna tiene un valor por defecto.
+                    color = color_columna['C']
+                except KeyError:
+                    # Y si no, le asignamos el color por defecto de la tabla/fila
+                    color = color_defecto
 
         etiqueta.config(bg=color)
 
