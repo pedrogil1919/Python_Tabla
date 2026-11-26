@@ -21,8 +21,22 @@ class Desplazamiento(object):
         self.__canvas = canvas
         self.__marco = marco
         self.__barra = barra
+        # Variable para determinar si el ratón está dentro de la tabla o no, y
+        # así habilitar o deshabilitar el movimiento con el ratón.
+        self.__dentro = False
         self.desp_vertical = True
-
+        
+        self.__marco.bind("<Enter>", self.__mouse_enter)
+        self.__marco.bind("<Leave>", self.__mouse_leave)
+    
+    def  __mouse_enter(self, evento=None):
+        self.__dentro = True
+        self.__configurar_desp_vertical()        
+                
+    def  __mouse_leave(self, evento=None):
+        self.__dentro = False
+        self.__configurar_desp_vertical()
+        
 ################################################################################
 ################################################################################
     #  Definición de eventos relacionados con el desplazamiento vertical
@@ -104,14 +118,29 @@ class Desplazamiento(object):
         else:
             # En caso de que el marco sea más grande que el canvas:
             # habilitamos el desplazamiento con la rueda del ratón.
-            if sys.platform == "linux" or sys.platform == "linux2":
-                self.__canvas.bind_all("<Button-4>", self.__rueda_raton)
-                self.__canvas.bind_all("<Button-5>", self.__rueda_raton)
-            elif sys.platform == "win32" or "darwin":
-                self.__canvas.bind_all("<MouseWheel>", self.__rueda_raton)
-            # Habilitamos el desplazamiento con las teclas de cursor.
-            self.__canvas.bind_all("<Up>", self.__teclas_cursor)
-            self.__canvas.bind_all("<Down>", self.__teclas_cursor)
+            if self.__dentro:
+                # Hacemos esto si el ratón está sobre el marco. Si no,
+                # lo que hacemos es deshabilitar el evento
+                # NOTA: Es necesario deshabilitar, por si tenemos otro marco
+                # sobre el que sí está el ratón, y así le permitimos atender a
+                # el evento.
+                if sys.platform == "linux" or sys.platform == "linux2":
+                    self.__canvas.bind_all("<Button-4>", self.__rueda_raton)
+                    self.__canvas.bind_all("<Button-5>", self.__rueda_raton)
+                elif sys.platform == "win32" or "darwin":
+                    self.__canvas.bind_all("<MouseWheel>", self.__rueda_raton)
+                # Habilitamos el desplazamiento con las teclas de cursor.
+                self.__canvas.bind_all("<Up>", self.__teclas_cursor)
+                self.__canvas.bind_all("<Down>", self.__teclas_cursor)
+            else:
+                # Deshabilitamos el desplazamiento con la rueda del ratón si el
+                # ratón no está sobre el marco.
+                self.__canvas.unbind_all("<MouseWheel>")
+                self.__canvas.unbind_all("<Button-4>")
+                self.__canvas.unbind_all("<Button-5>")
+                # Deshabilitamos el desplazamiento con las teclas de cursor.
+                self.__canvas.unbind_all("<Up>")
+                self.__canvas.unbind_all("<Down>")
             # Mostramos la barra de desplazamiento
             self.__barra.grid(row=0, column=1, sticky="ns")
 
