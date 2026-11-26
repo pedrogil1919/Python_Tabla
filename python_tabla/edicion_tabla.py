@@ -282,6 +282,7 @@ class TablaEdicion(Tabla):
             # el combo actual y sustituirlo por uno nuevo. En el caso de que
             # no cambie, esta acción no afecta.
             self.__sustituir_combo(fila, columna, evento)
+            self.__eliminar_control_activo()
 
     def __eliminar_control_activo(self, evento=None):
         # Eliminar el último control que hemos estado editando, y lo sustituimos
